@@ -1,0 +1,3 @@
+- insert:
+    - id: relay-dashboard
+      name: '@local/relay-dashboard'

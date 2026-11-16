@@ -1,0 +1,41 @@
+# Dependencies and generated output
+node_modules/
+dist/
+coverage/
+*.tgz
+*.zip
+*.log
+
+# Local configuration, runtime state and exported credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+.npmrc
+.git-credentials
+.netrc
+.dsh/
+runtime/
+backups/
+*credentials*.json
+*secrets*.json
+*token*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.har
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+
+# Internal reviews, editor and operating-system data
+.brooks-lint-history.json
+REVIEW.md
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.bak

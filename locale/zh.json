@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "中转站仪表盘",
+    "description": "查看兼容 Sub2API 的中转站余额、请求、费用和 Token 使用量。"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "name": "@local/relay-dashboard",
+  "version": "1.0.8",
+  "private": true,
+  "type": "module",
+  "description": "A multi-site Sub2API-compatible gateway dashboard for DeepSeek Harness.",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "README.zh-CN.md",
+    "SECURITY.md",
+    "CHANGELOG.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  },
+  "scripts": {
+    "check": "node --check index.js && node --check client.js && node --test profiles.test.js",
+    "check:secrets": "python3 scripts/check-release.py",
+    "pack:release": "npm pack --ignore-scripts --pack-destination dist"
+  }
+}
