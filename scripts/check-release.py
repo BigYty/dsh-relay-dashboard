@@ -13,7 +13,7 @@ EXPECTED = {
     'package/package.json', 'package/index.js', 'package/client.js',
     'package/cordis.patch.yml', 'package/icon.svg', 'package/locale/en.json',
     'package/locale/zh.json', 'package/README.md', 'package/README.zh-CN.md',
-    'package/SECURITY.md', 'package/CHANGELOG.md',
+    'package/SECURITY.md', 'package/CHANGELOG.md', 'package/LICENSE',
 }
 PATTERNS = {
     'private-key': re.compile(rb'-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----'),

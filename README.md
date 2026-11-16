@@ -90,4 +90,4 @@ Tests cover normalization, concurrent saves, independent site updates, migration
 
 ## Security and distribution
 
-Read [SECURITY.md](SECURITY.md) before sharing logs or submitting an issue. Examples and test tokens are synthetic. No license has been selected by the project owner; no open-source license grant is implied by repository visibility. Confirm licensing before redistributing or publishing to an npm registry.
+Read [SECURITY.md](SECURITY.md) before sharing logs or submitting an issue. Examples and test tokens are synthetic. Licensed under the [MIT License](LICENSE). The original v1.0.8 release assets predate this license declaration; for marketplace installation use the pinned commit supplied in the listing request, which includes the license and compatibility metadata.

@@ -19,7 +19,8 @@
     "README.md",
     "README.zh-CN.md",
     "SECURITY.md",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "LICENSE"
   ],
   "dsh": {
     "bundle": {
@@ -37,5 +38,13 @@
     "check": "node --check index.js && node --check client.js && node --test profiles.test.js",
     "check:secrets": "python3 scripts/check-release.py",
     "pack:release": "npm pack --ignore-scripts --pack-destination dist"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BigYty/dsh-relay-dashboard.git"
+  },
+  "engines": {
+    "dsh": "0.2.2-rc.1"
   }
 }

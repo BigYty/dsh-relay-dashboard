@@ -90,4 +90,4 @@ python3 scripts/check-release.py dist/*.tgz
 
 ## 安全与分发
 
-提交问题或分享日志前，请先阅读 [SECURITY.md](SECURITY.md)。所有文档示例与测试 Token 均为合成值。项目所有者尚未选择许可证，仓库可见性不表示授予开源许可；再分发或发布到 npm registry 前应确认许可安排。
+提交问题或分享日志前，请先阅读 [SECURITY.md](SECURITY.md)。所有文档示例与测试 Token 均为合成值。项目采用 [MIT 许可证](LICENSE)。原 v1.0.8 Release 附件早于本次许可声明；市场安装请使用收录申请中指定的固定提交，该提交包含许可证及兼容声明。
