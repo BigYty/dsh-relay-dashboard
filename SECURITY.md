@@ -2,24 +2,28 @@
 
 ## English
 
-This bundle handles user-supplied gateway tokens. Store tokens through the dashboard; never hard-code them into source, environment examples, test fixtures, screenshots, browser exports or issue reports.
+This bundle handles account passwords, short-lived TOTP temporary tokens, access tokens, and rotating refresh tokens. Passwords are used only for the login request. Manually entered access tokens are sent to the Host credential provider and cleared from the form after saving; they are not placed in browser persistent storage. Temporary TOTP tokens and the access/refresh token pair are persisted only in the DSH profile credential provider. Refresh tokens are never returned to the Client, included in dashboard responses, or written to logs. The optional account Token-only result contains only an access token.
 
-The DSH profile credential provider owns durable storage. Only authenticated DSH owners may access the plugin's profile route, but all owners of that profile share its saved sites. Tokens are returned to an authorized browser and sent directly to the selected gateway. `no-store` prevents HTTP caching; it does not provide additional encryption. Use HTTPS for remote DSH deployments and gateways, and trust anyone who has owner access to that profile.
+The DSH credential record is shared by authenticated owners of the current profile; it is not isolated per Web account. Dashboard payloads are reduced to fields used by the UI and held only in page memory. All plugin routes use `Cache-Control: no-store`; this prevents HTTP caching but does not provide additional encryption. The DSH credential provider controls storage-at-rest protection. Users can delete a saved site or remove the complete plugin credential record from the UI.
 
-Browser copies from earlier versions are retained after migration. Remove those copies only after verifying server restoration, and only if you intend to remove them. Repository cleanup and packaging never read or erase runtime credentials.
+Host requests accept HTTPS origins only. DNS results are checked against private/reserved address ranges and pinned for each request; redirects are not followed. Request and response bodies are capped, upstream cookies are not forwarded, and error responses are sanitized. No authorized third-party integration for CodeKey.ai's interactive challenge was found: complete verification on the gateway's official page and use an access token the gateway authorizes, if provided. The plugin does not generate or bypass challenge results. These controls reduce, but do not eliminate, risks from a compromised DSH Host, a compromised public gateway, or owners with access to the profile.
 
-Before committing, run `npm run check:secrets`. Before distributing a tarball, scan that exact archive and verify its file list and checksum. The scanner checks known token formats, private keys, non-example credential assignments, deployment paths and reachable Git history. Detection rules are necessarily incomplete; also review unfamiliar binary files, environment/config exports and generated output manually. Do not upload private incident evidence to a public issue.
+Older browser token copies are migrated to the DSH credential record before being cleared. A failed migration leaves the browser copy intact. Repository checks and packaging never read runtime credentials. Do not add real credentials, user data, screenshots, browser exports or production configuration to source control or public issues.
 
-For a suspected leak, stop distribution, revoke the exposed credential at its issuer, replace it in the dashboard, and review affected Git history and releases before sharing again. Do not force-push shared history without coordinating with the repository owner. Use GitHub private vulnerability reporting when the repository owner enables it; otherwise request a private contact channel without including the secret.
+Before committing, run `npm run check` and `npm run check:secrets`. Before distributing a tarball, scan that exact archive and verify its file list and checksum. The scanner covers known token formats, private keys, non-example credential assignments, deployment paths and reachable Git history; its rules are necessarily incomplete. Review generated output and unfamiliar binaries manually.
+
+For a suspected leak, stop distribution, revoke the exposed credential at its issuer, sign in again to rotate credentials, and review affected Git history and releases before sharing again. Do not force-push shared history without coordinating with the repository owner. Use GitHub private vulnerability reporting when available; otherwise request a private contact channel without including the secret.
 
 ## 中文
 
-本插件处理用户输入的中转站 Token。请通过仪表盘保存 Token，不要将真实值写入源码、环境示例、测试、截图、浏览器导出文件或问题报告。
+本插件处理账号密码、短时 TOTP 临时 Token、访问 Token 与轮换 Refresh Token。密码仅用于登录请求。手动输入的访问 Token 会发送给 Host 凭据提供器，保存后从表单清空，不写入浏览器持久存储。TOTP 临时 Token 和访问/Refresh Token 凭据对仅持久化在 DSH profile 凭据提供器中。Refresh Token 不会返回 Client、包含在仪表盘响应或写入日志。账号登录的“仅 Token”响应只包含访问 Token。
 
-持久化由 DSH profile 的凭据提供器负责。插件站点路由仅允许已认证 owner 访问，但同一 profile 的所有 owner 共享已保存站点。Token 会返回到获准的浏览器，并直接发送到所选中转站。`no-store` 用于避免 HTTP 缓存，不提供额外加密。远程部署应使用 HTTPS，并确保所有 owner 都是可信人员。
+当前 DSH profile 的已认证 owner 共享凭据记录，并非按 Web 账号隔离。仪表盘响应会筛选为界面使用字段，仅在页面内存中处理。插件路由设置 `Cache-Control: no-store`，用于避免 HTTP 缓存，但不提供额外加密。静态存储保护由 DSH 凭据提供器负责。用户可从界面删除单站凭据，或移除插件的完整凭据记录。
 
-旧版本浏览器副本会在迁移后保留。仅在确认服务器可恢复数据、且确实希望清除本地副本时自行删除。仓库清理和打包不会读取或删除运行凭据。
+Host 只接受 HTTPS 来源。DNS 解析结果会与私有/保留地址段比对，并固定地址发起请求；不跟随重定向。请求和响应大小受限，不转发上游 Cookie，错误信息会清洗。尚未找到 CodeKey.ai 对第三方插件开放的授权交互式验证集成：请在中转站官方页面完成验证，再使用该站授权提供的访问 Token（如果站点提供）。插件不会生成或绕过验证结果。这些措施只能降低风险，无法消除 DSH Host、中转站或 profile owner 被攻破带来的风险。
 
-提交前运行 `npm run check:secrets`；分发前扫描最终压缩包，核对文件清单与校验和。扫描器检查已知 Token 格式、私钥、非示例凭据赋值、部署路径与可达 Git 历史，但检测规则并不完备。陌生二进制、环境/配置导出与生成文件仍需人工检查，私人事故材料不应进入公开 issue。
+旧版浏览器 Token 会先迁移到 DSH 凭据记录，之后才清除浏览器副本。迁移失败时保留浏览器数据。仓库检查和打包不会读取运行凭据。不要把真实凭据、用户数据、截图、浏览器导出或生产配置加入源码仓库或公开 issue。
 
-如疑似泄漏，先停止分发，在凭据签发方撤销相关凭据，更新仪表盘，再检查受影响的 Git 历史与发布资产。未经仓库所有者协调，不要强制覆盖共享历史。如果仓库启用了 GitHub 私密漏洞报告，请使用该渠道；否则先请求私密联系方式，不要在请求中附带秘密。
+提交前运行 `npm run check` 与 `npm run check:secrets`。分发前扫描最终压缩包并核对文件清单和校验和。扫描器检查已知 Token 格式、私钥、非示例凭据赋值、部署路径与可达 Git 历史，但检测规则不可能穷尽。生成文件和陌生二进制仍需人工检查。
+
+如疑似泄漏，先停止分发，在凭据签发方撤销暴露凭据，重新登录轮换凭据，并检查受影响的 Git 历史与发布资产。未经仓库所有者协调，不要强制覆盖共享历史。若仓库启用了 GitHub 私密漏洞报告，请使用该渠道；否则先请求私密联系方式，不要在请求中附带秘密。

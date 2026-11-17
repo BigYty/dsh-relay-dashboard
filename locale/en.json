@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Relay dashboard",
-    "description": "View balance, requests, costs, and token usage across Sub2API-compatible gateways."
+    "description": "Sign in to Sub2API-compatible gateways, view usage, and retrieve access tokens."
   }
 }

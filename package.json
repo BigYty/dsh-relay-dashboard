@@ -1,9 +1,9 @@
 {
   "name": "@local/relay-dashboard",
-  "version": "1.0.8",
+  "version": "1.1.5",
   "private": true,
   "type": "module",
-  "description": "A multi-site Sub2API-compatible gateway dashboard for DeepSeek Harness.",
+  "description": "Secure sign-in, usage dashboards, and access-token retrieval for Sub2API-compatible gateways.",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",
