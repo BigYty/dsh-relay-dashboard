@@ -15,7 +15,9 @@ window.__ModuleLoader__.load({
         challengeFallback: '此站点要求额外的人机验证；请先在站点官方页面完成验证，再使用官方提供的访问 Token 登录。本插件不会生成或绕过验证结果。',
         statusTwoFactor: '待完成两步验证', statusRenewal: '自动续期已启用',
         statusTokenVerified: 'Token 已验证，自动续期不可用', statusTokenUnverified: 'Token 尚未验证',
-        statusReauth: '需要重新登录',
+        statusReauth: '需要重新登录', statusExpired: 'Token 已过期，请重新登录',
+        nextUpdate: '下次更新时间', expiry: 'Token 过期时间', unavailable: '未提供',
+        expiresIn: 'Token 过期倒计时', expired: '已过期',
       },
       en: {
         headerSubtitle: 'Sign in with a password or paste an access token authorized by the gateway',
@@ -25,7 +27,9 @@ window.__ModuleLoader__.load({
         challengeFallback: 'This site requires additional human verification. Complete it on the official site, then use an access token authorized by the gateway. This plugin does not generate or bypass verification results.',
         statusTwoFactor: 'Two-factor verification pending', statusRenewal: 'Automatic renewal enabled',
         statusTokenVerified: 'Token verified; automatic renewal unavailable', statusTokenUnverified: 'Token not yet verified',
-        statusReauth: 'Sign-in required',
+        statusReauth: 'Sign-in required', statusExpired: 'Token expired; sign in again',
+        nextUpdate: 'Next update', expiry: 'Token expiry', unavailable: 'Not provided',
+        expiresIn: 'Token countdown', expired: 'Expired',
       },
     };
     let localeService;
@@ -344,21 +348,48 @@ window.__ModuleLoader__.load({
       try { return new URL(site).host; } catch { return site; }
     }
 
-    function siteCredentialStatus(profile) {
+    function siteCredentialStatus(profile, now = Date.now()) {
       if (profile.needsTwoFactor) return t('statusTwoFactor');
+      if (profile.expiresAt > 0 && profile.expiresAt <= now && !profile.hasRefreshToken) return t('statusExpired');
       if (profile.hasRefreshToken) return t('statusRenewal');
       if (profile.hasAccessToken && profile.verifiedAt) return t('statusTokenVerified');
       if (profile.hasAccessToken) return t('statusTokenUnverified');
       return t('statusReauth');
     }
 
+    function formatCountdown(expiresAt, now) {
+      if (!(expiresAt > 0)) return t('unavailable');
+      const remaining = expiresAt - now;
+      if (remaining <= 0) return t('expired');
+      const seconds = Math.ceil(remaining / 1000);
+      const days = Math.floor(seconds / 86400);
+      const hours = Math.floor((seconds % 86400) / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      if (days) return `${days}天 ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function formatCredentialTime(timestamp) {
+      if (!(timestamp > 0)) return t('unavailable');
+      const date = new Date(timestamp);
+      return Number.isNaN(date.getTime()) ? t('unavailable') : date.toLocaleString();
+    }
+
     function formatSavedAt(timestamp) {
+      if (!(timestamp > 0)) return '尚无保存时间';
       const date = new Date(timestamp);
       return Number.isNaN(date.getTime()) ? '尚无保存时间' : `保存于 ${date.toLocaleString()}`;
     }
 
     function SiteTiltCard({ site, profile, active, onSelect, onToken, onDelete, demo }) {
       const [node, setNode] = React.useState(null);
+      const [now, setNow] = React.useState(() => Date.now());
+      React.useEffect(() => {
+        if (!(profile.expiresAt > 0)) return undefined;
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+      }, [profile.expiresAt]);
       React.useEffect(() => {
         if (!node) return undefined;
         const card = node.firstElementChild;
@@ -441,7 +472,9 @@ window.__ModuleLoader__.load({
             h('strong', null, siteLabel(site)),
             h('span', null, site),
             active ? h('span', { className: 'relay-site-current' }, '当前站点') : h('span', { className: 'relay-section-meta' }, formatSavedAt(profile.updatedAt)),
-            h('span', { className: 'relay-section-meta' }, siteCredentialStatus(profile)))),
+            h('span', { className: 'relay-section-meta' }, siteCredentialStatus(profile, now)),
+            h('span', { className: 'relay-section-meta' }, `${t('nextUpdate')}：${formatCredentialTime(profile.expiresAt)}`),
+            h('span', { className: 'relay-section-meta' }, `${t('expiresIn')}：${formatCountdown(profile.expiresAt, now)}`))),
         h('div', { className: 'relay-site-actions' },
           h('button', { type: 'button', className: 'relay-site-action', onClick: event => { event.stopPropagation(); onToken(); } }, '获取 Token'),
           h('button', { type: 'button', className: 'relay-site-action danger', onClick: event => { event.stopPropagation(); onDelete(); } }, '删除')));

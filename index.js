@@ -8,6 +8,7 @@ const PATH = '/relay-dashboard/profiles';
 const MAX_BODY_BYTES = 65536;
 const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 const REQUEST_TIMEOUT_MS = 20000;
+const MANUAL_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 const API_PATHS = new Set([
   '/auth/login', '/auth/login/2fa', '/auth/refresh',
   '/user/profile', '/usage/dashboard/stats', '/usage/dashboard/trend', '/usage/dashboard/models',
@@ -162,7 +163,7 @@ function profilesFromRecord(record) {
     profiles[site] = {
       accessToken: normalizeToken(raw.accessToken ?? raw.token),
       refreshToken: normalizeToken(raw.refreshToken),
-      expiresAt: Number.isFinite(Number(raw.expiresAt)) ? Number(raw.expiresAt) : 0,
+      expiresAt: Number.isFinite(Number(raw.expiresAt)) && Number(raw.expiresAt) > 0 ? Number(raw.expiresAt) : 0,
       updatedAt: Number.isFinite(Number(raw.updatedAt)) ? Number(raw.updatedAt) : 0,
       ...(Number.isFinite(Number(raw.verifiedAt)) && Number(raw.verifiedAt) > 0 ? { verifiedAt: Number(raw.verifiedAt) } : {}),
       pending: typeof raw.pending?.tempToken === 'string' ? {
@@ -217,6 +218,7 @@ function mapGatewayError(error, operation) {
 function summarizeProfiles(profiles) {
   return Object.fromEntries(Object.entries(profiles).map(([site, profile]) => [site, {
     updatedAt: profile.updatedAt,
+    expiresAt: profile.expiresAt || 0,
     hasAccessToken: Boolean(profile.accessToken),
     hasRefreshToken: Boolean(profile.refreshToken),
     verifiedAt: profile.verifiedAt || 0,
@@ -437,7 +439,8 @@ export function createProfileStore(credentials, { request = httpsJson, now = Dat
   async function saveToken(siteValue, rawToken) {
     const site = requireSecureSite(siteValue);
     const token = validateToken(rawToken, '访问 Token');
-    await writeSite(site, () => ({ accessToken: token, refreshToken: '', expiresAt: 0, updatedAt: now() }));
+    const savedAt = now();
+    await writeSite(site, () => ({ accessToken: token, refreshToken: '', expiresAt: savedAt + MANUAL_TOKEN_TTL_MS, updatedAt: savedAt }));
     return summarizeProfiles(await read());
   }
 

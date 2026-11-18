@@ -57,12 +57,12 @@ test('direct Token hint appends the requested retrieval instruction to the rende
 
 test('site cards localize each persisted credential status without conflating verified Tokens with renewal', async () => {
   const source = await readFile(new URL('./client.js', import.meta.url), 'utf8');
-  const status = source.match(/function siteCredentialStatus\(profile\) \{([\s\S]*?)\n    \}/);
+  const status = source.match(/function siteCredentialStatus\(profile, now = Date\.now\(\)\) \{([\s\S]*?)\n    \}/);
   assert.ok(status);
   assert.match(status[1], /if \(profile\.hasRefreshToken\) return t\('statusRenewal'\)/);
   assert.match(status[1], /if \(profile\.hasAccessToken && profile\.verifiedAt\) return t\('statusTokenVerified'\)/);
   assert.match(status[1], /if \(profile\.hasAccessToken\) return t\('statusTokenUnverified'\)/);
-  assert.match(source, /h\('span', \{ className: 'relay-section-meta' \}, siteCredentialStatus\(profile\)\)/);
+  assert.match(source, /h\('span', \{ className: 'relay-section-meta' \}, siteCredentialStatus\(profile, now\)\)/);
   assert.match(source, /statusTokenVerified: 'Token 已验证，自动续期不可用'/);
   assert.match(source, /statusTokenUnverified: 'Token 尚未验证'/);
   assert.match(source, /statusRenewal: '自动续期已启用'/);
@@ -115,7 +115,7 @@ test('token-only login makes no dashboard calls and exposes no refresh credentia
   assert.equal(record.payload.profiles['https://sub2api.example'].refreshToken, 'refresh-1');
   const listing = await store.list();
   assert.deepEqual(listing['https://sub2api.example'], {
-    updatedAt: 1000000, hasAccessToken: true, hasRefreshToken: true, verifiedAt: 0, needsTwoFactor: false, pendingMode: '',
+    updatedAt: 1000000, expiresAt: 4600000, hasAccessToken: true, hasRefreshToken: true, verifiedAt: 0, needsTwoFactor: false, pendingMode: '',
   });
   assert.equal(JSON.stringify(listing).includes('access-1'), false);
   assert.equal(JSON.stringify(result).includes('refresh-1'), false);
@@ -135,26 +135,39 @@ test('manual Token verification persists per site and restores the correct statu
   const returnedProfiles = await returnedStore.list();
 
   assert.deepEqual(profiles['https://gateway.example'], {
-    updatedAt: 1000000, hasAccessToken: true, hasRefreshToken: false, verifiedAt: 0, needsTwoFactor: false, pendingMode: '',
+    updatedAt: 1000000, expiresAt: 1000000 + 86400000, hasAccessToken: true, hasRefreshToken: false, verifiedAt: 0, needsTwoFactor: false, pendingMode: '',
   }, 'manual Token saving returns only a sanitized profile summary');
   assert.equal(saved.accessToken, manualTokenValue, 'the Host credential record retains the normalized Token');
   assert.equal(saved.refreshToken, '', 'manual Tokens do not inherit refresh credentials');
   assert.equal(saved.verifiedAt, 1000000, 'a successful dashboard query persists a per-site verification timestamp');
   assert.equal(dashboard.profile.balance, 12.5, 'a later store instance can query with the persisted Token');
   assert.deepEqual(returnedProfiles['https://gateway.example'], {
-    updatedAt: 1000000, hasAccessToken: true, hasRefreshToken: false, verifiedAt: 1000000, needsTwoFactor: false, pendingMode: '',
+    updatedAt: 1000000, expiresAt: 1000000 + 86400000, hasAccessToken: true, hasRefreshToken: false, verifiedAt: 1000000, needsTwoFactor: false, pendingMode: '',
   }, 'a new page/store instance restores the verified state for the Token site');
   assert.deepEqual(returnedProfiles['https://other-gateway.example'], {
-    updatedAt: 1000000, hasAccessToken: true, hasRefreshToken: false, verifiedAt: 0, needsTwoFactor: false, pendingMode: '',
+    updatedAt: 1000000, expiresAt: 1000000 + 86400000, hasAccessToken: true, hasRefreshToken: false, verifiedAt: 0, needsTwoFactor: false, pendingMode: '',
   }, 'verifying one site does not change another site state');
   assert.deepEqual(returnedProfiles['https://renewable.example'], {
-    updatedAt: 1000000, hasAccessToken: true, hasRefreshToken: true, verifiedAt: 0, needsTwoFactor: false, pendingMode: '',
+    updatedAt: 1000000, expiresAt: 4600000, hasAccessToken: true, hasRefreshToken: true, verifiedAt: 0, needsTwoFactor: false, pendingMode: '',
   }, 'another account site retains its automatic-renewal status');
   assert.deepEqual(upstream.calls.filter(call => call.site === 'https://gateway.example').map(call => call.path), [
     '/user/profile', '/usage/dashboard/stats', '/usage/dashboard/trend', '/usage/dashboard/models',
   ], 'manual Token mode queries the dashboard resources');
   assert.ok(upstream.calls.filter(call => call.site === 'https://gateway.example').every(call => call.accessToken === manualTokenValue), 'only the submitted Token authorizes these requests');
   assert.equal(JSON.stringify(profiles).includes(manualTokenValue), false, 'the saved Token is never returned in the profile summary');
+});
+
+test('manual Token expires after 24 hours and follows the existing reauthentication path', async () => {
+  let clock = 1000000;
+  const upstream = upstreamForDashboard();
+  const store = createProfileStore(credentials(), { request: upstream.request, now: () => clock });
+  await store.saveToken('https://expiring-manual.example', manualTokenValue);
+  clock += 24 * 60 * 60 * 1000;
+  await assert.rejects(
+    store.dashboard('https://expiring-manual.example', 7),
+    error => error.code === 'reauth-required' && error.status === 401,
+  );
+  assert.deepEqual(upstream.calls, [], 'expired manual Tokens do not make upstream requests or attempt refresh');
 });
 
 test('maps an interactive verification challenge to an explicit non-bypass path', async () => {
@@ -195,6 +208,33 @@ test('dashboard login requests only the four dashboard resources and returns min
   assert.equal(result.dashboard.models[0].private_note, undefined);
   assert.equal(JSON.stringify(result).includes('private@example.invalid'), false);
   assert.equal(JSON.stringify(result).includes('private-user-id'), false);
+});
+
+test('summaries expose real expiry timestamps and normalize invalid stored expiry as unavailable', async () => {
+  const provider = credentials();
+  const upstream = upstreamForDashboard({ loginResult: auth('expiring-access', 'expiring-refresh', 120) });
+  const store = createProfileStore(provider, { request: upstream.request, now: () => 1000000 });
+  await store.login({ site: 'https://expiring.example', email: 'u@example.invalid', password: 'x', mode: 'token' });
+  await store.saveToken('https://manual.example', manualTokenValue);
+  const profiles = await store.list();
+  assert.equal(profiles['https://expiring.example'].expiresAt, 1000000 + 120000);
+  assert.equal(profiles['https://manual.example'].expiresAt, 1000000 + 86400000);
+  const record = (await provider.readRecord('relay-dashboard/sites')).payload;
+  record.profiles['https://invalid.example'] = { accessToken: 'invalid-token', expiresAt: 'not-a-time', updatedAt: 1000000 };
+  record.profiles['https://negative.example'] = { accessToken: 'negative-token', expiresAt: -1, updatedAt: 1000000 };
+  const invalidProvider = credentials({ kind: 'grant', payload: record });
+  const invalidProfiles = await createProfileStore(invalidProvider).list();
+  assert.equal(invalidProfiles['https://invalid.example'].expiresAt, 0);
+  assert.equal(invalidProfiles['https://negative.example'].expiresAt, 0);
+});
+
+test('the Client countdown is time-based, refreshes while mounted, and isolates each card profile', async () => {
+  const source = await readFile(new URL('./client.js', import.meta.url), 'utf8');
+  assert.match(source, /function formatCountdown\(expiresAt, now\)/);
+  assert.match(source, /const timer = setInterval\(\(\) => setNow\(Date\.now\(\)\), 1000\)/);
+  assert.match(source, /formatCountdown\(profile\.expiresAt, now\)/);
+  assert.match(source, /formatCredentialTime\(profile\.expiresAt\)/);
+  assert.match(source, /if \(profile\.expiresAt > 0 && profile\.expiresAt <= now && !profile\.hasRefreshToken\)/);
 });
 
 test('refresh rotation retries unauthorized dashboard calls with the new access token', async () => {
@@ -347,7 +387,7 @@ test('route enforces owner admission, no-store, size limits, summaries, and dele
   assert.equal(manual.result.profiles['https://gateway.example'].hasRefreshToken, false, 'the manual Token profile has no refresh credential');
   assert.equal(JSON.stringify(manual.result).includes(manualTokenValue), false, 'the route never echoes the submitted Token');
   const restored = await request('GET');
-  assert.deepEqual(Object.keys(restored.result.profiles['https://a.example']).sort(), ['hasAccessToken', 'hasRefreshToken', 'needsTwoFactor', 'pendingMode', 'updatedAt', 'verifiedAt']);
+  assert.deepEqual(Object.keys(restored.result.profiles['https://a.example']).sort(), ['expiresAt', 'hasAccessToken', 'hasRefreshToken', 'needsTwoFactor', 'pendingMode', 'updatedAt', 'verifiedAt']);
   assert.equal(restored.headers['Cache-Control'], 'no-store, private');
   assert.equal(restored.headers.Pragma, 'no-cache');
   assert.equal((await request('POST', '{bad')).status, 400);

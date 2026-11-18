@@ -1,3 +1,31 @@
+# 1.1.7
+
+## English
+
+- Set manually entered access tokens to expire 24 hours after successful Host persistence, using the existing absolute `expiresAt` field.
+- Restore the same per-site expiry across page reloads and route state recovery; expired manual tokens follow the existing reauthentication path without refresh attempts.
+
+## 中文
+
+- 手动录入的访问 Token 在 Host 成功保存后 24 小时过期，沿用现有绝对时间字段 `expiresAt`。
+- 页面刷新和状态恢复时按站点恢复相同过期时间；手动 Token 过期后沿用现有重新登录流程，不尝试续期。
+
+This local patch does not publish a release or marketplace update.
+
+# 1.1.6
+
+## English
+
+- Show each credential's real expiry/next-update time and a live countdown when the gateway supplies `expires_in`.
+- Restore time state per site after page re-entry; manual Tokens without expiry data remain explicitly marked as unavailable and are never treated as auto-renewable.
+
+## 中文
+
+- 中转站提供 `expires_in` 时展示对应凭据的真实过期/下次更新时间，并实时更新倒计时。
+- 页面重新进入时按站点恢复时间状态；没有过期数据的手动 Token 明确显示不可用，不伪装成可自动续期凭据。
+
+This local patch does not publish a release or marketplace update.
+
 # 1.1.5
 
 ## English

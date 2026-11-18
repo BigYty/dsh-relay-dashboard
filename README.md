@@ -2,14 +2,14 @@
 
 [简体中文](README.zh-CN.md) · **English**
 
-A server-mediated dashboard for Sub2API-compatible gateways in DeepSeek Harness (DSH). Version **1.1.3** restores direct access-token entry with Host-side persistence and dashboard queries while retaining account login and two-factor verification.
+A server-mediated dashboard for Sub2API-compatible gateways in DeepSeek Harness (DSH). Version **1.1.6** restores direct access-token entry with Host-side persistence and dashboard queries while retaining account login and two-factor verification.
 
 ## Features
 
 - Log in with a Sub2API email and password; complete TOTP two-factor login when requested.
 - Alternatively, paste an access token provided by the gateway's authorized flow; the Host stores it and immediately queries the dashboard.
 - Keep access and refresh credentials in the DSH profile credential provider. Refresh tokens are never returned to the browser.
-- Automatically refresh rotated credentials near expiry and retry dashboard requests after an expired access token.
+- Manually entered access tokens expire 24 hours after successful Host persistence; the absolute expiry is restored per site and displayed by the live countdown.
 - Choose **Dashboard** to request only the four resources used by the existing dashboard, or **Token only** to receive only an access token without requesting dashboard data.
 - Retrieve an access token for a saved site without fetching analytics; remove one site's credentials or delete all saved credentials from the UI.
 - Display balance, API-key counts, requests, costs, token usage, RPM/TPM, response time, platform breakdowns, model distribution, and trends when the gateway exposes those fields.
