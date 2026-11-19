@@ -1,6 +1,6 @@
 {
   "name": "@local/relay-dashboard",
-  "version": "1.1.7",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "description": "Secure sign-in, usage dashboards, and access-token retrieval for Sub2API-compatible gateways.",
@@ -14,6 +14,8 @@
     "index.js",
     "client.js",
     "cordis.patch.yml",
+    "scripts/import-profile.mjs",
+    "scripts/check-release.py",
     "locale/*.json",
     "icon.svg",
     "README.md",
@@ -35,8 +37,9 @@
     }
   },
   "scripts": {
-    "check": "node --check index.js && node --check client.js && node --test profiles.test.js",
+    "check": "node --check index.js && node --check client.js && node --check scripts/import-profile.mjs && node --test profiles.test.js",
     "check:secrets": "python3 scripts/check-release.py",
+    "import:profile": "node scripts/import-profile.mjs",
     "pack:release": "npm pack --ignore-scripts --pack-destination dist"
   },
   "license": "MIT",

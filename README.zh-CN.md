@@ -2,7 +2,7 @@
 
 **简体中文** · [English](README.md)
 
-在 DeepSeek Harness（DSH）中查看兼容 Sub2API 的中转站数据。**v1.1.3** 恢复直接输入访问 Token、Host 端持久化并自动查询的登录方式，同时保留账号登录和两步验证。
+在 DeepSeek Harness（DSH）中查看兼容 Sub2API 的中转站数据。v1.2.0 提供跨 profile 的便携安装入口，不复制 DSH 登录态或凭据。
 
 ## 功能
 
@@ -20,17 +20,28 @@
 
 ## 环境要求
 
-- DeepSeek Harness Web，启用 `credentials`、`webServer`、`connection` 及侧栏/主面板服务。已在 **DSH 0.2.2-rc.1** 验证，其他版本兼容性尚未验证。
+- DeepSeek Harness Web，启用 `credentials`、`webServer`、`connection` 及侧栏/主面板服务。CLI 安装语法以本机 `dsh plugin --help` 为准。本包声明 `engines.dsh: 0.2.2-rc.1`，目前仅按该版本契约开发和验证；其他版本是否兼容尚无证据。
 - 中转站提供兼容的登录、可选 TOTP、续期与仪表盘接口。
 - DSH Host 必须能通过 HTTPS 访问解析到公网地址的中转站。私有、环回、链路本地地址和重定向会被拒绝；因此不支持仅本地可访问的 HTTP 中转站。
 - 开发与发布检查使用支持内置测试运行器的 Node.js、npm、Git 和 Python 3。插件没有额外 npm 运行依赖，不需要独立的前端编译步骤。
 
-## 安装
+## 安装与导入到其他 profile
 
-1. 下载经过检查的发布压缩包，或克隆仓库后运行下文检查命令。
-2. 在 DSH 中通过插件管理器安装本地压缩包或 bundle 目录的绝对路径。由 Agent 调用工具时，使用 `install_bundle`，将本地路径传入 `target`。
-3. 根据插件管理器结果操作；如果提示需要重启，则先重启 DSH，再刷新现有 Web 页面。
-4. 打开侧栏的 **中转站仪表盘**，填写站点来源与账号凭据并选择模式。
+将发布包放在目标机器可访问的本地路径，然后在该机器、能调用目标 DSH 安装 CLI 的 shell 中运行一条命令；若目标 DSH 在另一台主机，需先把包复制到该主机：
+
+```sh
+npm run import:profile -- --profile <目标profile名> --bundle /path/to/relay-dashboard.tgz
+```
+
+`--bundle` 也可指向已解压的插件目录。命令使用 DSH 官方 CLI 的 `dsh plugin --profile <name> add <package>` 入口安装；它不读取启动日志、不转交 DSH token、不导入登录会话。完成后启动/重启目标 profile 并刷新其 Web 页面，再在插件页面用目标实例自己的 owner 登录态和网关账号登录。
+
+也可以直接使用 DSH 原生入口：
+
+```sh
+dsh plugin --profile <目标profile名> add /path/to/relay-dashboard.tgz
+```
+
+如通过 DSH 插件管理器安装本地压缩包或 bundle 目录，也可使用该管理器提供的正式导入操作。若安装器报告包兼容性不满足，不要绕过版本保护。
 
 这是 DSH 插件，不是独立 Web 服务器。包保留 `private` 标记以避免误发布到 npm registry，但仍可共享 Git 仓库或由 npm 生成的 tarball。
 
@@ -58,6 +69,10 @@ Host 使用 DSH 凭据记录 `relay-dashboard/sites`，并通过 `credentials.mo
 统计请求由 DSH Host 通过 HTTPS 代理。Host 不转发 Cookie、不跟随重定向，会检查并固定解析到的公网 DNS 地址，限制请求/响应大小，并清洗错误信息。仪表盘数据筛选后返回页面渲染，不写入浏览器存储或插件凭据。同一 DSH profile 的所有已认证 owner 共享其已保存中转站凭据，并非按 Web 账号隔离。静态存储保护由 DSH 凭据提供器决定，本插件不额外实现加密。
 
 旧版浏览器站点表 `dsh.relay-dashboard.profiles` 和旧单 Token 键会在成功读取服务器列表后尝试迁移；只有服务器确认迁移成功才清除浏览器副本。迁移失败时保留旧数据以便重试。用户未选择相应站点并发起仪表盘或访问 Token 操作前，浏览器中的旧 Token 不会发送到中转站。
+
+## 兼容性边界
+
+DSH CLI help 当前记录的插件入口为 `dsh plugin --profile <name> add <pkg>`；本次在本机 DSH 0.2.2-rc.1 CLI 上核对该语法。bundle 文件格式、Cordis 服务注入和 UI slot 仍是插件运行契约，因此不能据此宣称任意未来 DSH 版本兼容。包声明的 `engines.dsh` 是安装时约束；若其他版本不满足该约束，安装器可能拒绝安装。要彻底消除未来版本兼容验证，需要 DSH 上游提供并维护跨版本稳定的 bundle/插件 ABI 承诺。
 
 ## 开发与发布检查
 

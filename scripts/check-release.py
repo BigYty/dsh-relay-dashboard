@@ -11,7 +11,8 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parent.parent
 EXPECTED = {
     'package/package.json', 'package/index.js', 'package/client.js',
-    'package/cordis.patch.yml', 'package/icon.svg', 'package/locale/en.json',
+    'package/cordis.patch.yml', 'package/scripts/import-profile.mjs', 'package/scripts/check-release.py',
+    'package/icon.svg', 'package/locale/en.json',
     'package/locale/zh.json', 'package/README.md', 'package/README.zh-CN.md',
     'package/SECURITY.md', 'package/CHANGELOG.md', 'package/LICENSE',
 }

@@ -2,7 +2,7 @@
 
 [简体中文](README.zh-CN.md) · **English**
 
-A server-mediated dashboard for Sub2API-compatible gateways in DeepSeek Harness (DSH). Version **1.1.6** restores direct access-token entry with Host-side persistence and dashboard queries while retaining account login and two-factor verification.
+A server-mediated dashboard for Sub2API-compatible gateways in DeepSeek Harness (DSH). Version 1.2.0 adds a portable profile installation entry point without copying DSH login state or credentials.
 
 ## Features
 
@@ -20,17 +20,28 @@ The interface is currently Chinese. Package display metadata is available in Eng
 
 ## Requirements
 
-- DeepSeek Harness Web with `credentials`, `webServer`, `connection`, and the sidebar/main slot services enabled. Verified against **DSH 0.2.2-rc.1**; compatibility with other versions has not been verified.
+- DeepSeek Harness Web with `credentials`, `webServer`, `connection`, and sidebar/main slot services enabled. Use the target installation's `dsh plugin --help` for CLI syntax. This package declares `engines.dsh: 0.2.2-rc.1` and is developed/tested against that contract only; compatibility with other versions is unverified.
 - A Sub2API-compatible gateway exposing login, optional TOTP, refresh, and dashboard endpoints.
 - The DSH Host must be able to make outbound HTTPS requests to a publicly resolved gateway origin. Private, loopback, link-local, and redirect destinations are rejected. This prevents arbitrary private-network access and means local-only HTTP gateways are unsupported.
 - Development/release checks use Node.js with the built-in test runner, npm, Git, and Python 3. There are no additional npm runtime dependencies and no separate frontend compilation step.
 
-## Installation
+## Install into another profile
 
-1. Download a reviewed release tarball, or clone this repository and run the checks below.
-2. In DSH, ask the plugin manager to install the local tarball or the absolute path to this bundle directory. For an agent using the plugin tool, use `install_bundle` with that local path as `target`.
-3. Follow the plugin manager's result. If it reports a restart is required, restart DSH; then refresh the existing Web page.
-4. Open **中转站仪表盘** in the sidebar, enter the gateway origin and account credentials, and select a mode.
+Place the reviewed release archive on a local path accessible to the target DSH CLI, then run the command from that host. If the other DSH runs on a remote host, copy the archive there first:
+
+```sh
+npm run import:profile -- --profile <target-profile> --bundle /path/to/relay-dashboard.tgz
+```
+
+`--bundle` may also name an extracted plugin directory. The helper delegates to DSH's supported `dsh plugin --profile <name> add <package>` CLI. It does not inspect startup logs, transfer a DSH token, or copy an authenticated session. Start/restart the target profile and refresh its Web page; sign in to the plugin using that instance's own owner session and gateway account.
+
+The native DSH command is also available directly:
+
+```sh
+dsh plugin --profile <target-profile> add /path/to/relay-dashboard.tgz
+```
+
+The DSH plugin manager's local-package import operation is another supported route. Do not bypass a package-engine compatibility rejection.
 
 This is a DSH bundle, not a standalone web server. The package remains marked `private` to prevent accidental npm registry publication; sharing the repository or an npm-generated tarball still works.
 
@@ -58,6 +69,10 @@ The Host uses the DSH credential record `relay-dashboard/sites`, with serialized
 Dashboard requests are proxied by the DSH Host over HTTPS. The Host forwards no cookies, follows no redirects, validates DNS results against private/reserved address ranges, pins the resolved public address, caps request/response bodies, and returns sanitized errors. Dashboard data is filtered and returned to the page for rendering but is not saved in browser storage or plugin credentials. All authenticated owners of the current DSH profile share its saved gateway credentials; this is not isolated per web account. The DSH credential provider determines storage-at-rest protection; this plugin does not add its own encryption.
 
 Older browser maps under `dsh.relay-dashboard.profiles` and the legacy single-token key are migrated only after the server list is read successfully. The browser copies are cleared only after the server confirms the migration. On a failed migration they remain available for retry. No browser token is sent to a gateway until the user selects that gateway and requests a dashboard or access token.
+
+## Compatibility boundary
+
+The local DSH CLI help documents `dsh plugin --profile <name> add <pkg>`; this syntax was checked against the available DSH 0.2.2-rc.1 CLI. Bundle format, Cordis service injection, and UI slot registration remain runtime contracts, so this does not establish compatibility with arbitrary future DSH versions. `engines.dsh` is an install-time constraint and an installer may reject versions outside it. Removing future-version compatibility verification entirely requires an upstream, maintained cross-version stability commitment for the bundle/plugin ABI.
 
 ## Development and release checks
 

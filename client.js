@@ -10,7 +10,7 @@ window.__ModuleLoader__.load({
       zh: {
         headerSubtitle: '使用账号密码，或粘贴中转站官方提供的访问 Token',
         authAccount: '账号密码', authToken: '访问 Token', authMethodGroup: '登录方式', accessTokenLabel: '访问 Token',
-        tokenLoginHint: '此 Token 会保存到当前 DSH profile 的 Host 凭据库并用于查询。若站点要求人机验证，请先在站点官方页面完成验证并使用其授权提供的 Token；插件不会生成或绕过挑战。可以通过对应站点开发者工具在控制台输入localStorage.getItem("auth_token")获取token',
+        tokenLoginHint: '此 Token 会保存到当前 DSH profile 的 Host 凭据库并用于查询。若站点要求人机验证，请先在站点官方页面完成验证，再使用该站明确提供的 API 访问 Token；不同站点的登录状态和 Token 存储方式可能不同。本插件不会读取浏览器内部存储，也不会生成或绕过挑战。',
         tokenSaveError: 'Token 保存失败', savingAndQuery: '正在保存并查询…', saveAndQuery: '保存 Token 并查询',
         challengeFallback: '此站点要求额外的人机验证；请先在站点官方页面完成验证，再使用官方提供的访问 Token 登录。本插件不会生成或绕过验证结果。',
         statusTwoFactor: '待完成两步验证', statusRenewal: '自动续期已启用',
@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
       en: {
         headerSubtitle: 'Sign in with a password or paste an access token authorized by the gateway',
         authAccount: 'Email / password', authToken: 'Access token', authMethodGroup: 'Login method', accessTokenLabel: 'Access token',
-        tokenLoginHint: 'This token is stored in the current DSH profile Host credential provider and used for queries. Complete any required human verification on the gateway’s official site first, then use a token it authorizes. This plugin does not generate or bypass challenges. You can retrieve the token by entering localStorage.getItem("auth_token") in the corresponding site’s developer tools console.',
+        tokenLoginHint: 'This token is stored in the current DSH profile Host credential provider and used for queries. Complete any required human verification on the gateway’s official site first, then use an API access token the gateway explicitly provides. Sites may store login state differently. This plugin does not read browser-internal storage or generate or bypass challenges.',
         tokenSaveError: 'Token could not be saved', savingAndQuery: 'Saving and querying…', saveAndQuery: 'Save token and query',
         challengeFallback: 'This site requires additional human verification. Complete it on the official site, then use an access token authorized by the gateway. This plugin does not generate or bypass verification results.',
         statusTwoFactor: 'Two-factor verification pending', statusRenewal: 'Automatic renewal enabled',

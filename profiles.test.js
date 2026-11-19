@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { readFile } from 'node:fs/promises';
 import { createProfileStore, normalizeToken, normalizeSite, apply, PluginError, publicAddress } from './index.js';
+import { buildCommand, install, parseArgs } from './scripts/import-profile.mjs';
 
 function credentials(initial) {
   let record = structuredClone(initial);
@@ -44,14 +45,15 @@ const sampleData = {
   '/usage/dashboard/models': [{ model: 'example-model', total_tokens: 120, total_requests: 3, private_note: 'must-not-reach-client' }],
 };
 
-test('direct Token hint appends the requested retrieval instruction to the rendered guidance', async () => {
+test('direct Token guidance avoids undocumented browser storage formats', async () => {
   const source = await readFile(new URL('./client.js', import.meta.url), 'utf8');
   const chinese = source.match(/zh: \{[\s\S]*?tokenLoginHint: '([^']+)'/);
   const english = source.match(/en: \{[\s\S]*?tokenLoginHint: '([^']+)'/);
   assert.ok(chinese);
   assert.ok(english);
-  assert.equal(chinese[1], '此 Token 会保存到当前 DSH profile 的 Host 凭据库并用于查询。若站点要求人机验证，请先在站点官方页面完成验证并使用其授权提供的 Token；插件不会生成或绕过挑战。可以通过对应站点开发者工具在控制台输入localStorage.getItem("auth_token")获取token');
-  assert.match(english[1], /localStorage\.getItem\("auth_token"\).*developer tools console/);
+  assert.match(chinese[1], /站明确提供的 API 访问 Token/);
+  assert.match(english[1], /API access token the gateway explicitly provides/);
+  assert.doesNotMatch(chinese[1] + english[1], /localStorage|developer tools console|auth_token/);
   assert.match(source, /h\('p', \{ className: 'relay-auth-note' \}, t\('tokenLoginHint'\)\)/);
 });
 
@@ -82,6 +84,27 @@ function upstreamForDashboard(options = {}) {
   };
   return { calls, request };
 }
+
+test('one-step profile import calls the DSH plugin manager with validated arguments', () => {
+  const parsed = parseArgs(['--profile', 'work-2', '--bundle', './relay-dashboard.tgz']);
+  const command = buildCommand(parsed);
+  assert.equal(command.executable, 'dsh');
+  assert.deepEqual(command.args.slice(0, 4), ['plugin', '--profile', 'work-2', 'add']);
+  assert.ok(command.args[4].endsWith('/relay-dashboard.tgz'));
+
+  let received;
+  install(parsed, (...args) => { received = args; return { status: 0 }; });
+  assert.deepEqual(received[1], command.args);
+  assert.equal(received[2].stdio, 'inherit');
+  assert.throws(() => parseArgs(['--bundle', '/tmp/plugin']), /--profile/);
+  assert.throws(() => parseArgs(['--profile', '../outside', '--bundle', '/tmp/plugin']), /Profile name/);
+  assert.throws(() => parseArgs(['--profile', 'work', '--bundle', '-bad']), /--bundle requires/);
+});
+
+test('profile import reports installer errors and non-zero exits', () => {
+  assert.throws(() => install({ profile: 'work', bundle: '/tmp/plugin' }, () => ({ status: 1 })), /exit status 1/);
+  assert.throws(() => install({ profile: 'work', bundle: '/tmp/plugin' }, () => ({ error: new Error('missing dsh') })), /Could not start/);
+});
 
 test('normalizes pasted credentials and rejects unsafe origin syntax', () => {
   for (const value of ['abc.def', '"abc.def"', "'abc.def'", '‘abc.def’', '“abc.def”', 'Bearer abc.def', '"Bearer abc.def"']) {

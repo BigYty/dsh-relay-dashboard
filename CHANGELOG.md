@@ -1,3 +1,21 @@
+# 1.2.0
+
+## English
+
+- Add a one-command installer for adding the reviewed bundle to another local DSH profile through the supported `dsh plugin` CLI.
+- Keep DSH authentication local to each installation; do not inspect startup logs or transfer process tokens or authenticated sessions.
+- Remove gateway-browser `localStorage` token-format guidance; accept only gateway-authorized API tokens.
+- Add installer argument/error tests and document restart persistence and compatibility limits.
+
+## 中文
+
+- 增加通过受支持的 `dsh plugin` CLI 将 bundle 一键安装到其他本地 DSH profile 的命令。
+- DSH 登录认证仍由每个安装实例独立管理；不读取启动日志、不转交进程 Token 或登录会话。
+- 移除依赖网关浏览器 `localStorage` Token 格式的操作指导，仅使用网关授权的 API Token。
+- 增加导入参数/异常测试，并说明重启持久性与兼容性边界。
+
+This local patch does not publish a release or marketplace update.
+
 # 1.1.7
 
 ## English
